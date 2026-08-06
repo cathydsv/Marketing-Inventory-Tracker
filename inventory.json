@@ -1,0 +1,20 @@
+[
+  {
+    "sku": "M001",
+    "name": "Tape",
+    "qty": 50,
+    "rack": "A01"
+  },
+  {
+    "sku": "M002",
+    "name": "Carton Box",
+    "qty": 100,
+    "rack": "A01"
+  },
+  {
+    "sku": "M003",
+    "name": "Label",
+    "qty": 200,
+    "rack": "B01"
+  }
+]
