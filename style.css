@@ -156,10 +156,21 @@ body {
     cursor: pointer;
     transition: background 0.15s ease;
     white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .btn-dsv-primary:hover {
     background-color: var(--dsv-teal-dark);
+}
+
+/* Added: White Plus Symbol Styling */
+.plus-symbol {
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
 }
 
 .btn-dsv-secondary {
@@ -173,6 +184,9 @@ body {
     cursor: pointer;
     transition: background 0.15s ease;
     white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .btn-dsv-secondary:hover {
@@ -180,7 +194,7 @@ body {
 }
 
 /* QR Camera Reader */
-.qr-scanner-box {
+.qr-scanner-box, #qr-reader {
     width: 100%;
     max-width: 360px;
     margin: 0 auto 24px auto;
@@ -188,6 +202,13 @@ body {
     border: 2px solid var(--dsv-blue);
     border-radius: 6px;
     overflow: hidden;
+}
+
+/* Added: Ensures camera video scales cleanly inside box */
+#qr-reader video {
+    width: 100% !important;
+    height: auto !important;
+    display: block;
 }
 
 /* Card Grid Layout */
@@ -260,8 +281,8 @@ body {
     line-height: 1.6;
 }
 
-/* Modal Overlay & Dialog */
-.modal-overlay {
+/* Modal Overlay & Dialog (Supports both .modal and .modal-overlay) */
+.modal, .modal-overlay {
     display: none;
     position: fixed;
     top: 0;
@@ -294,7 +315,7 @@ body {
     padding-bottom: 12px;
 }
 
-.modal-header h3 {
+.modal-header h3, .modal-header h2 {
     margin: 0;
     color: var(--dsv-blue);
 }
@@ -391,6 +412,7 @@ body {
     .btn-dsv-primary,
     .btn-dsv-secondary {
         width: 100%;
+        justify-content: center;
         text-align: center;
     }
 
