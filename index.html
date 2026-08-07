@@ -55,6 +55,46 @@
         <div id="inventoryList"></div>
     </main>
 
+    <!-- Edit Item Modal -->
+    <div id="editModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Item Details</h3>
+                <button class="close-btn" onclick="closeEditModal()">&times;</button>
+            </div>
+            <form id="editForm" onsubmit="saveItemEdits(event)">
+                <input type="hidden" id="editRecordId">
+                
+                <div class="form-group">
+                    <label for="editName">Item Name</label>
+                    <input type="text" id="editName" readonly class="readonly-input">
+                </div>
+                <div class="form-group">
+                    <label for="editSku">SKU</label>
+                    <input type="text" id="editSku" required>
+                </div>
+                <div class="form-group">
+                    <label for="editRack">Rack Location</label>
+                    <input type="text" id="editRack" required>
+                </div>
+                <div class="form-group">
+                    <label for="editQty">Quantity</label>
+                    <input type="number" id="editQty" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="editImageFile">Upload New Image</label>
+                    <input type="file" id="editImageFile" accept="image/*">
+                    <small style="color: var(--dsv-text-muted);">Leave empty to keep existing image.</small>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-dsv-cancel" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" id="saveEditBtn" class="btn-dsv-secondary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
