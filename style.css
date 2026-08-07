@@ -2,8 +2,11 @@
 :root {
     --dsv-blue: #002664;
     --dsv-dark-blue: #001942;
-    --dsv-teal: #20c997;
-    --dsv-teal-dark: #1baa80;
+    
+    /* Updated to #00682A and a slightly darker shade for hover */
+    --dsv-teal: #00682A;
+    --dsv-teal-dark: #004d1f;
+
     --dsv-light-grey: #f4f6f8;
     --dsv-border: #dbe2ea;
     --dsv-text-main: #0d1e3a;
