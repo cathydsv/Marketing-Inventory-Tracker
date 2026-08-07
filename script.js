@@ -17,10 +17,11 @@ function fetchAirtableData() {
     .then(data => {
         // Map Airtable records including attachment image URLs
         inventoryData = data.records.map(record => {
-            const imageAttachments = record.fields['image'];
+            // Checks for 'image' or 'Image' column names
+            const imageAttachments = record.fields['image'] || record.fields['Image'];
             const imageUrl = (imageAttachments && imageAttachments.length > 0) 
                 ? imageAttachments[0].url 
-                : 'https://via.placeholder.com/300x180?text=No+Image'; // Fallback image
+                : 'https://placehold.co/300x180/eef2f5/002664?text=No+Image';
 
             return {
                 id: record.id,
@@ -46,7 +47,18 @@ function fetchAirtableData() {
     .catch(error => console.error("Error fetching Airtable data:", error));
 }
 
-// 2. Display items as cards with Product Images & Editable Quantity Controls
+// 2. Helper function to step quantity up or down
+function adjustQty(recordId, amount) {
+    const qtyInput = document.getElementById(`qty-${recordId}`);
+    if (qtyInput) {
+        let currentQty = parseInt(qtyInput.value, 10) || 0;
+        let newQty = currentQty + amount;
+        if (newQty < 0) newQty = 0; // Prevents negative stock counts
+        qtyInput.value = newQty;
+    }
+}
+
+// 3. Display items as cards with Product Images & Quantity Controls (+ / -)
 function displayInventory(itemsToDisplay) {
     const listContainer = document.getElementById('inventoryList');
     listContainer.innerHTML = '';
@@ -61,14 +73,20 @@ function displayInventory(itemsToDisplay) {
         card.className = 'item-card';
         
         card.innerHTML = `
-            <img src="${item.image}" alt="${item.name}" class="item-image">
+            <img src="${item.image}" alt="${item.name}" class="item-image" onerror="this.onerror=null; this.src='https://placehold.co/300x180/eef2f5/002664?text=No+Image';">
             <div class="item-name">${item.name}</div>
             <div class="item-details">
                 <strong>SKU:</strong> ${item.sku} <br>
                 <strong>Rack Location:</strong> ${item.rack} <br><br>
-                <strong>Qty:</strong> 
-                <input type="number" id="qty-${item.id}" value="${item.qty}" style="width: 70px; padding: 4px; border-radius: 4px; border: 1px solid #ccc;">
-                <button onclick="updateQuantity('${item.id}')" style="padding: 5px 12px; background-color: #002664; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 5px;">Save</button>
+                
+                <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                    <strong>Qty:</strong> 
+                    <button onclick="adjustQty('${item.id}', -1)" style="padding: 4px 10px; background-color: #e2e8f0; border: 1px solid #cbd5e1; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 16px;">-</button>
+                    <input type="number" id="qty-${item.id}" value="${item.qty}" min="0" style="width: 55px; padding: 4px; border-radius: 4px; border: 1px solid #ccc; text-align: center;">
+                    <button onclick="adjustQty('${item.id}', 1)" style="padding: 4px 10px; background-color: #e2e8f0; border: 1px solid #cbd5e1; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 16px;">+</button>
+                    
+                    <button onclick="updateQuantity('${item.id}')" style="padding: 5px 12px; background-color: #002664; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 4px;">Save</button>
+                </div>
             </div>
         `;
         
@@ -76,7 +94,7 @@ function displayInventory(itemsToDisplay) {
     });
 }
 
-// 3. Update quantity directly in Airtable
+// 4. Update quantity directly in Airtable
 function updateQuantity(recordId) {
     const newQtyInput = document.getElementById(`qty-${recordId}`);
     const newQty = parseInt(newQtyInput.value, 10);
@@ -103,7 +121,7 @@ function updateQuantity(recordId) {
     });
 }
 
-// 4. Filtering logic
+// 5. Filtering logic
 function filterInventory(searchTerm) {
     const term = searchTerm.toLowerCase();
     const filteredData = inventoryData.filter(item => {
@@ -122,7 +140,7 @@ searchInput.addEventListener('input', function(event) {
 // Load data on start
 fetchAirtableData();
 
-// 5. QR Code Camera Scanner Logic
+// 6. QR Code Camera Scanner Logic
 let html5QrCode = null;
 let isScanning = false;
 
