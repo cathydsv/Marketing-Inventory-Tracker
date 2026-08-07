@@ -1,52 +1,98 @@
-/* Basic reset to make things look consistent */
-* {
-    box-sizing: border-box;
-    font-family: Arial, sans-serif;
+/* DSV Corporate Style Adjustments */
+:root {
+    --dsv-blue: #002664;
+    --dsv-light-grey: #f4f6f8;
+    --dsv-border: #d1d5db;
+    --dsv-text-dark: #111827;
+    --dsv-accent: #0056b3;
 }
 
 body {
-    background-color: #f4f4f9;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background-color: var(--dsv-light-grey);
+    color: var(--dsv-text-dark);
     margin: 0;
     padding: 20px;
 }
 
 .container {
-    max-width: 600px; /* Keeps it looking good on PC, fills screen on mobile */
+    max-width: 900px;
     margin: 0 auto;
+    background: #ffffff;
+    padding: 25px;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    border-top: 5px solid var(--dsv-blue);
 }
 
 h1 {
-    text-align: center;
-    color: #333;
+    color: var(--dsv-blue);
+    font-size: 24px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--dsv-light-grey);
+    padding-bottom: 10px;
 }
 
 #searchInput {
     width: 100%;
     padding: 12px;
+    border: 1px solid var(--dsv-border);
+    border-radius: 4px;
+    font-size: 15px;
+    box-sizing: border-box;
     margin-bottom: 20px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    font-size: 16px;
 }
 
-/* Styling for each inventory item card */
+/* Card Grid Layout */
+#inventoryList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
 .item-card {
-    background: white;
+    background: #ffffff;
+    border: 1px solid var(--dsv-border);
+    border-radius: 6px;
     padding: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.item-card:hover {
+    box-shadow: 0 6px 16px rgba(0, 38, 100, 0.1);
+    border-color: var(--dsv-blue);
+}
+
+/* Product Image Styling */
+.item-image {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 4px;
     margin-bottom: 10px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background-color: #eef2f5;
 }
 
 .item-name {
-    font-size: 18px;
-    font-weight: bold;
-    color: #0056b3;
-    margin-bottom: 5px;
+    font-weight: 700;
+    color: var(--dsv-blue);
+    font-size: 16px;
+    margin-bottom: 8px;
 }
 
 .item-details {
-    color: #555;
     font-size: 14px;
+    color: #4b5563;
     line-height: 1.5;
+}
+
+/* Button & Input Overrides */
+button {
+    font-family: inherit;
+    font-weight: 600;
 }

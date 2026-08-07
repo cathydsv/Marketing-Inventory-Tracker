@@ -1,12 +1,12 @@
 // CONFIGURATION: Replace with your actual Airtable details
-const AIRTABLE_BASE_ID = 'appDHZSvIlr63Z4f5'; // e.g., 'app123456789'
-const AIRTABLE_TOKEN = 'patazE87jjAASpoYd.a184876d404f4df8f8d828c01e5be459db04e43cd3faec3a4bee00ced80c7d77'; // e.g., 'patXXXXXXX'
+const AIRTABLE_BASE_ID = 'appDHZSvIlr63Z4f5';
+const AIRTABLE_TOKEN = 'patazE87jjAASpoYd.a184876d404f4df8f8d828c01e5be459db04e43cd3faec3a4bee00ced80c7d77';
 const TABLE_NAME = 'Inventory';
 
 let inventoryData = [];
 const searchInput = document.getElementById('searchInput');
 
-// 1. Fetch data directly from Airtable API
+// 1. Fetch data directly from Airtable API (including Product Images)
 function fetchAirtableData() {
     fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TABLE_NAME}`, {
         headers: {
@@ -15,14 +15,22 @@ function fetchAirtableData() {
     })
     .then(response => response.json())
     .then(data => {
-        // Map Airtable records using YOUR exact column names
-        inventoryData = data.records.map(record => ({
-            id: record.id,
-            sku: record.fields['sku'] || '',
-            name: record.fields['item name'] || '',
-            qty: record.fields['quantity'] || 0,
-            rack: record.fields['rack location'] || ''
-        }));
+        // Map Airtable records including attachment image URLs
+        inventoryData = data.records.map(record => {
+            const imageAttachments = record.fields['image'];
+            const imageUrl = (imageAttachments && imageAttachments.length > 0) 
+                ? imageAttachments[0].url 
+                : 'https://via.placeholder.com/300x180?text=No+Image'; // Fallback image
+
+            return {
+                id: record.id,
+                sku: record.fields['sku'] || '',
+                name: record.fields['item name'] || '',
+                qty: record.fields['quantity'] || 0,
+                rack: record.fields['rack location'] || '',
+                image: imageUrl
+            };
+        });
 
         // Handle URL search parameter (?rack=A1-01)
         const urlParams = new URLSearchParams(window.location.search);
@@ -38,13 +46,13 @@ function fetchAirtableData() {
     .catch(error => console.error("Error fetching Airtable data:", error));
 }
 
-// 2. Display items with Editable Quantity Controls
+// 2. Display items as cards with Product Images & Editable Quantity Controls
 function displayInventory(itemsToDisplay) {
     const listContainer = document.getElementById('inventoryList');
     listContainer.innerHTML = '';
 
     if (itemsToDisplay.length === 0) {
-        listContainer.innerHTML = '<p>No items found.</p>';
+        listContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #666;">No items found.</p>';
         return;
     }
 
@@ -53,13 +61,14 @@ function displayInventory(itemsToDisplay) {
         card.className = 'item-card';
         
         card.innerHTML = `
+            <img src="${item.image}" alt="${item.name}" class="item-image">
             <div class="item-name">${item.name}</div>
             <div class="item-details">
                 <strong>SKU:</strong> ${item.sku} <br>
                 <strong>Rack Location:</strong> ${item.rack} <br><br>
                 <strong>Qty:</strong> 
                 <input type="number" id="qty-${item.id}" value="${item.qty}" style="width: 70px; padding: 4px; border-radius: 4px; border: 1px solid #ccc;">
-                <button onclick="updateQuantity('${item.id}')" style="padding: 5px 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 5px;">Save</button>
+                <button onclick="updateQuantity('${item.id}')" style="padding: 5px 12px; background-color: #002664; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 5px;">Save</button>
             </div>
         `;
         
@@ -80,7 +89,7 @@ function updateQuantity(recordId) {
         },
         body: JSON.stringify({
             fields: {
-                'quantity': newQty // Updates your 'quantity' column in Airtable
+                'quantity': newQty
             }
         })
     })
@@ -113,6 +122,7 @@ searchInput.addEventListener('input', function(event) {
 // Load data on start
 fetchAirtableData();
 
+// 5. QR Code Camera Scanner Logic
 let html5QrCode = null;
 let isScanning = false;
 
@@ -125,7 +135,7 @@ function toggleScanner() {
         html5QrCode.stop().then(() => {
             readerElement.style.display = 'none';
             scanBtn.innerText = '📷 Scan QR Code';
-            scanBtn.style.backgroundColor = '#007bff';
+            scanBtn.style.backgroundColor = '#002664';
             isScanning = false;
         }).catch(err => console.error("Error stopping scanner:", err));
     } else {
@@ -143,14 +153,17 @@ function toggleScanner() {
             { facingMode: "environment" }, // Prefers back camera on mobile devices
             config,
             (decodedText) => {
-                // When QR code is scanned:
                 console.log("Scanned QR Code:", decodedText);
 
-                // If QR code contains full URL (e.g., https://site.com/?rack=A1-01), extract parameter
+                // Extract parameter if QR code contains full URL (?rack=A1-01)
                 let query = decodedText;
                 if (decodedText.includes('rack=')) {
-                    const url = new URL(decodedText);
-                    query = url.searchParams.get('rack') || decodedText;
+                    try {
+                        const url = new URL(decodedText);
+                        query = url.searchParams.get('rack') || decodedText;
+                    } catch (e) {
+                        query = decodedText;
+                    }
                 }
 
                 // Auto-fill search box and filter list
@@ -161,7 +174,7 @@ function toggleScanner() {
                 toggleScanner();
             },
             (errorMessage) => {
-                // Scanning errors occur continuously when no QR code is in frame; keep silent
+                // Continuous scanning attempts; keep console quiet
             }
         ).catch(err => {
             console.error("Unable to start camera:", err);
