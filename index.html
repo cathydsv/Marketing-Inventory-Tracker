@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MKT Storeroom Inventory</title>
+    <title>DSV | Storeroom Inventory</title>
     <link rel="stylesheet" href="style.css">
     
     <!-- HTML5 QR Code Library -->
@@ -11,23 +11,53 @@
 </head>
 <body>
 
-    <div class="container">
-        <h1>📦 MKT Inventory 📦</h1>
+    <!-- DSV Corporate Header Bar -->
+    <header class="dsv-navbar">
+        <div class="dsv-navbar-container">
+            <div class="dsv-brand">
+                <span class="dsv-logo-text">DSV</span>
+                <span class="dsv-divider">|</span>
+                <span class="dsv-subtitle">Global Transport & Logistics — Storeroom Management</span>
+            </div>
+            <div class="dsv-status-badge">
+                <span class="status-dot"></span> Live Sync
+            </div>
+        </div>
+    </header>
 
-        <!-- QR Scanner Controls -->
-        <div style="text-align: center; margin-bottom: 15px;">
-            <button id="scanBtn" onclick="toggleScanner()" style="padding: 10px 18px; font-size: 16px; background-color: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                📷 Scan QR Code
-            </button>
-            <div id="qr-reader" style="width: 100%; max-width: 350px; margin: 15px auto 0 auto; display: none; border: 2px solid #007bff; border-radius: 8px; overflow: hidden;"></div>
+    <main class="main-container">
+        <!-- KPI Analytics Summary Bar -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">Total SKUs</div>
+                <div class="kpi-value" id="totalSkus">0</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Total Stock Count</div>
+                <div class="kpi-value" id="totalItems">0</div>
+            </div>
+            <div class="kpi-card kpi-alert">
+                <div class="kpi-label">Low Stock Alerts (&lt; 10)</div>
+                <div class="kpi-value" id="lowStockCount">0</div>
+            </div>
         </div>
 
-        <!-- Search Bar -->
-        <input type="text" id="searchInput" placeholder="Search by Product, SKU, or Rack...">
+        <!-- Action & Search Bar -->
+        <div class="control-panel">
+            <div class="search-box-wrapper">
+                <input type="text" id="searchInput" placeholder="Search product name, SKU, or rack location...">
+            </div>
+            <button id="scanBtn" class="btn-dsv-secondary" onclick="toggleScanner()">
+                📷 Scan QR Code
+            </button>
+        </div>
 
-        <!-- Inventory List -->
+        <!-- Camera Scanner Modal Box -->
+        <div id="qr-reader" class="qr-scanner-box"></div>
+
+        <!-- Inventory List Card Grid -->
         <div id="inventoryList"></div>
-    </div>
+    </main>
 
     <script src="script.js"></script>
 </body>
