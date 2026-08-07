@@ -6,7 +6,7 @@ const TABLE_NAME = 'Inventory';
 let inventoryData = [];
 const searchInput = document.getElementById('searchInput');
 
-// 1. Fetch data from Airtable
+// 1. Fetch data directly from Airtable API
 function fetchAirtableData() {
     fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TABLE_NAME}`, {
         headers: {
@@ -52,11 +52,9 @@ function fetchAirtableData() {
 function updateKPIs(data) {
     const totalSkus = data.length;
     const totalItems = data.reduce((sum, item) => sum + item.qty, 0);
-    const lowStock = data.filter(item => item.qty < 10).length;
 
     if (document.getElementById('totalSkus')) document.getElementById('totalSkus').innerText = totalSkus;
     if (document.getElementById('totalItems')) document.getElementById('totalItems').innerText = totalItems.toLocaleString();
-    if (document.getElementById('lowStockCount')) document.getElementById('lowStockCount').innerText = lowStock;
 }
 
 // 2. Helper function to step quantity
@@ -83,18 +81,10 @@ function displayInventory(itemsToDisplay) {
     itemsToDisplay.forEach(item => {
         const card = document.createElement('div');
         card.className = 'item-card';
-        
-        const isLowStock = item.qty < 10;
-        const badgeHTML = isLowStock 
-            ? `<span class="badge badge-low-stock">LOW STOCK (&lt;10)</span>` 
-            : `<span class="badge badge-in-stock">IN STOCK</span>`;
 
         card.innerHTML = `
             <img src="${item.image}" alt="${item.name}" class="item-image" onerror="this.onerror=null; this.src='https://placehold.co/300x180/eef2f5/002664?text=No+Image';">
-            <div>
-                ${badgeHTML}
-                <div class="item-name">${item.name}</div>
-            </div>
+            <div class="item-name">${item.name}</div>
             <div class="item-details">
                 <strong>SKU:</strong> ${item.sku} <br>
                 <strong>Rack Location:</strong> ${item.rack} <br><br>
