@@ -6,8 +6,6 @@
     --dsv-border: #dbe2ea;
     --dsv-text-main: #0d1e3a;
     --dsv-text-muted: #5e6d82;
-    --dsv-red-alert: #d9534f;
-    --dsv-green-badge: #28a745;
 }
 
 body {
@@ -37,13 +35,16 @@ body {
 .dsv-brand {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
 }
 
-.dsv-logo-text {
-    font-size: 28px;
-    font-weight: 900;
-    letter-spacing: -1px;
+/* DSV SVG Logo Styling */
+.dsv-logo-img {
+    height: 24px;
+    width: auto;
+    display: block;
+    /* Inverts default navy SVG to white on dark navbar background */
+    filter: brightness(0) invert(1); 
 }
 
 .dsv-divider {
@@ -52,9 +53,10 @@ body {
 }
 
 .dsv-subtitle {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 500;
-    color: #d0dceb;
+    color: #ffffff;
+    letter-spacing: 0.2px;
 }
 
 .dsv-status-badge {
@@ -85,7 +87,7 @@ body {
 /* KPI Dashboard Grid */
 .kpi-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 16px;
     margin-bottom: 24px;
 }
@@ -101,10 +103,6 @@ body {
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
-.kpi-card.kpi-alert {
-    border-left-color: var(--dsv-red-alert);
-}
-
 .kpi-label {
     font-size: 12px;
     text-transform: uppercase;
@@ -118,10 +116,6 @@ body {
     font-size: 28px;
     font-weight: 800;
     color: var(--dsv-blue);
-}
-
-.kpi-alert .kpi-value {
-    color: var(--dsv-red-alert);
 }
 
 /* Control & Search Bar */
@@ -222,23 +216,4 @@ body {
     font-size: 13px;
     color: var(--dsv-text-muted);
     line-height: 1.6;
-}
-
-.badge {
-    display: inline-block;
-    padding: 3px 8px;
-    font-size: 11px;
-    font-weight: 700;
-    border-radius: 3px;
-    margin-bottom: 8px;
-}
-
-.badge-in-stock {
-    background-color: #e6f4ea;
-    color: #137333;
-}
-
-.badge-low-stock {
-    background-color: #fce8e6;
-    color: #c5221f;
 }
