@@ -83,8 +83,14 @@ function displayInventory(itemsToDisplay) {
         card.className = 'item-card';
 
         card.innerHTML = `
-            <img src="${item.image}" alt="${item.name}" class="item-image" onerror="this.onerror=null; this.src='https://placehold.co/300x180/eef2f5/002664?text=No+Image';">
-            <div class="item-name">${item.name}</div>
+            <div>
+                <div class="card-header-bar">
+                    <div class="item-name">${item.name}</div>
+                    <button onclick="openEditModal('${item.id}')" class="btn-edit-card">✏️ Edit</button>
+                </div>
+                <img src="${item.image}" alt="${item.name}" class="item-image" onerror="this.onerror=null; this.src='https://placehold.co/300x180/eef2f5/002664?text=No+Image';">
+            </div>
+            
             <div class="item-details">
                 <strong>SKU:</strong> ${item.sku} <br>
                 <strong>Rack Location:</strong> ${item.rack} <br><br>
@@ -104,7 +110,7 @@ function displayInventory(itemsToDisplay) {
     });
 }
 
-// 4. Update quantity directly in Airtable
+// Quick Quantity Save from Card
 function updateQuantity(recordId) {
     const newQtyInput = document.getElementById(`qty-${recordId}`);
     const newQty = parseInt(newQtyInput.value, 10);
@@ -123,16 +129,126 @@ function updateQuantity(recordId) {
     })
     .then(response => response.json())
     .then(() => {
-        // Local state update for instant KPI recalculation
         const item = inventoryData.find(i => i.id === recordId);
         if (item) item.qty = newQty;
         updateKPIs(inventoryData);
-        
         alert("Stock level saved successfully.");
     })
     .catch(error => {
         console.error("Error updating quantity:", error);
         alert("Failed to update quantity.");
+    });
+}
+
+// 4. Modal Edit Handlers
+function openEditModal(recordId) {
+    const item = inventoryData.find(i => i.id === recordId);
+    if (!item) return;
+
+    document.getElementById('editRecordId').value = item.id;
+    document.getElementById('editName').value = item.name;
+    document.getElementById('editSku').value = item.sku;
+    document.getElementById('editRack').value = item.rack;
+    document.getElementById('editQty').value = item.qty;
+    document.getElementById('editImageFile').value = '';
+
+    document.getElementById('editModal').style.display = 'flex';
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+}
+
+async function saveItemEdits(event) {
+    event.preventDefault();
+    const saveBtn = document.getElementById('saveEditBtn');
+    saveBtn.innerText = 'Saving...';
+    saveBtn.disabled = true;
+
+    const recordId = document.getElementById('editRecordId').value;
+    const newSku = document.getElementById('editSku').value;
+    const newRack = document.getElementById('editRack').value;
+    const newQty = parseInt(document.getElementById('editQty').value, 10);
+    const fileInput = document.getElementById('editImageFile');
+
+    try {
+        // Step A: Patch text fields in Airtable
+        const patchResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TABLE_NAME}/${recordId}`, {
+            method: 'PATCH',
+            headers: {
+                Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                fields: {
+                    'sku': newSku,
+                    'rack location': newRack,
+                    'quantity': newQty
+                }
+            })
+        });
+
+        if (!patchResponse.ok) throw new Error('Failed to update text fields.');
+
+        // Step B: Upload Image if selected
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const base64Data = await convertFileToBase64(file);
+
+            // Send file to Airtable Attachment upload API endpoint
+            const uploadResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${recordId}/image/uploadAttachment`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    contentType: file.type,
+                    file: base64Data,
+                    filename: file.name
+                })
+            });
+
+            if (!uploadResponse.ok) {
+                // Fallback check if Airtable field uses capital 'Image'
+                await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${recordId}/Image/uploadAttachment`, {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        contentType: file.type,
+                        file: base64Data,
+                        filename: file.name
+                    })
+                });
+            }
+        }
+
+        alert('Item updated successfully!');
+        closeEditModal();
+        fetchAirtableData(); // Reload inventory
+    } catch (error) {
+        console.error('Error updating item:', error);
+        alert('Failed to update item details. Check console for details.');
+    } finally {
+        saveBtn.innerText = 'Save Changes';
+        saveBtn.disabled = false;
+    }
+}
+
+// Convert uploaded file to Base64
+function convertFileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const result = reader.result;
+            const base64 = result.split(',')[1];
+            resolve(base64);
+        };
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(file);
     });
 }
 
