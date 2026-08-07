@@ -1,12 +1,25 @@
-// CONFIGURATION: Replace with your actual Airtable details
+// ==========================================
+// CONFIGURATION & FIELD MAPPING
+// ==========================================
 const AIRTABLE_BASE_ID = 'appDHZSvIlr63Z4f5';
 const AIRTABLE_TOKEN = 'patazE87jjAASpoYd.a184876d404f4df8f8d828c01e5be459db04e43cd3faec3a4bee00ced80c7d77';
 const TABLE_NAME = 'Inventory';
 
+// IMPORTANT: Match these EXACTLY to your column headers in Airtable (Case-Sensitive!)
+const FIELDS = {
+    NAME: 'Item Name',        // e.g. 'Item Name' or 'item name' or 'Name'
+    SKU: 'Item Number',       // e.g. 'Item Number' or 'item number' or 'SKU'
+    RACK: 'Rack Location',    // e.g. 'Rack Location' or 'rack location'
+    QTY: 'Quantity',          // e.g. 'Quantity' or 'quantity'
+    IMAGE: 'image'            // e.g. 'image' or 'Image'
+};
+
 let inventoryData = [];
 const searchInput = document.getElementById('searchInput');
 
-// 1. Fetch data directly from Airtable API
+// ==========================================
+// 1. FETCH DATA FROM AIRTABLE
+// ==========================================
 function fetchAirtableData() {
     fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TABLE_NAME}`, {
         headers: {
@@ -15,26 +28,30 @@ function fetchAirtableData() {
     })
     .then(response => response.json())
     .then(data => {
+        if (!data.records) {
+            console.error("Airtable response missing records:", data);
+            return;
+        }
+
         inventoryData = data.records.map(record => {
-            const imageAttachments = record.fields['image'] || record.fields['Image'];
+            // Flexible check for image column
+            const imageAttachments = record.fields[FIELDS.IMAGE] || record.fields['Image'] || record.fields['image'];
             const imageUrl = (imageAttachments && imageAttachments.length > 0) 
                 ? imageAttachments[0].url 
                 : 'https://placehold.co/300x180/eef2f5/002664?text=No+Image';
 
             return {
                 id: record.id,
-                itemNumber: record.fields['item number'] || record.fields['Item Number'] || record.fields['sku'] || 'N/A',
-                name: record.fields['item name'] || record.fields['Item Name'] || 'Unnamed Item',
-                qty: parseInt(record.fields['quantity'], 10) || 0,
-                rack: record.fields['rack location'] || record.fields['Rack Location'] || 'Unassigned',
+                itemNumber: record.fields[FIELDS.SKU] || record.fields['Item Number'] || record.fields['item number'] || 'N/A',
+                name: record.fields[FIELDS.NAME] || record.fields['Item Name'] || record.fields['item name'] || 'Unnamed Item',
+                qty: parseInt(record.fields[FIELDS.QTY] || record.fields['Quantity'] || record.fields['quantity'], 10) || 0,
+                rack: record.fields[FIELDS.RACK] || record.fields['Rack Location'] || record.fields['rack location'] || 'Unassigned',
                 image: imageUrl
             };
         });
 
-        // Update Dashboard Stats Bar
         updateKPIs(inventoryData);
 
-        // Handle URL search parameter (?rack=A1-01)
         const urlParams = new URLSearchParams(window.location.search);
         const rackParam = urlParams.get('rack');
 
@@ -48,7 +65,6 @@ function fetchAirtableData() {
     .catch(error => console.error("Error fetching Airtable data:", error));
 }
 
-// Update Top KPI Metrics
 function updateKPIs(data) {
     const totalSkus = data.length;
     const totalItems = data.reduce((sum, item) => sum + item.qty, 0);
@@ -57,18 +73,18 @@ function updateKPIs(data) {
     if (document.getElementById('totalItems')) document.getElementById('totalItems').innerText = totalItems.toLocaleString();
 }
 
-// 2. Helper function to step quantity
+// ==========================================
+// 2. DISPLAY INVENTORY CARDS
+// ==========================================
 function adjustQty(recordId, amount) {
     const qtyInput = document.getElementById(`qty-${recordId}`);
     if (qtyInput) {
         let currentQty = parseInt(qtyInput.value, 10) || 0;
-        let newQty = currentQty + amount;
-        if (newQty < 0) newQty = 0;
+        let newQty = Math.max(0, currentQty + amount);
         qtyInput.value = newQty;
     }
 }
 
-// 3. Display items as DSV Cards
 function displayInventory(itemsToDisplay) {
     const listContainer = document.getElementById('inventoryList');
     listContainer.innerHTML = '';
@@ -110,37 +126,42 @@ function displayInventory(itemsToDisplay) {
     });
 }
 
-// Quick Quantity Save from Card
-function updateQuantity(recordId) {
+// Save Quantity directly from card
+async function updateQuantity(recordId) {
     const newQtyInput = document.getElementById(`qty-${recordId}`);
-    const newQty = parseInt(newQtyInput.value, 10);
+    const newQty = parseInt(newQtyInput.value, 10) || 0;
 
-    fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TABLE_NAME}/${recordId}`, {
-        method: 'PATCH',
-        headers: {
-            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            fields: {
-                'quantity': newQty
-            }
-        })
-    })
-    .then(response => response.json())
-    .then(() => {
+    const payload = { fields: {} };
+    payload.fields[FIELDS.QTY] = newQty;
+
+    try {
+        const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TABLE_NAME}/${recordId}`, {
+            method: 'PATCH',
+            headers: {
+                Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.error?.message || `HTTP ${response.status}`);
+        }
+
         const item = inventoryData.find(i => i.id === recordId);
         if (item) item.qty = newQty;
         updateKPIs(inventoryData);
         alert("Stock level saved successfully.");
-    })
-    .catch(error => {
+    } catch (error) {
         console.error("Error updating quantity:", error);
-        alert("Failed to update quantity.");
-    });
+        alert(`Failed to update quantity: ${error.message}`);
+    }
 }
 
-// 4. Create New Item Handlers
+// ==========================================
+// 3. CREATE NEW ITEM MODAL
+// ==========================================
 function openAddModal() {
     document.getElementById('addForm').reset();
     document.getElementById('addModal').style.display = 'flex';
@@ -159,37 +180,41 @@ async function saveNewItem(event) {
     const name = document.getElementById('addName').value;
     const itemNumber = document.getElementById('addSku').value;
     const rack = document.getElementById('addRack').value;
-    const qty = parseInt(document.getElementById('addQty').value, 10);
+    const qty = parseInt(document.getElementById('addQty').value, 10) || 0;
     const fileInput = document.getElementById('addImageFile');
 
     try {
-        // Step A: Create the new record in Airtable
+        // Step A: Create Record
+        const fieldsPayload = {};
+        fieldsPayload[FIELDS.NAME] = name;
+        fieldsPayload[FIELDS.SKU] = itemNumber;
+        fieldsPayload[FIELDS.RACK] = rack;
+        fieldsPayload[FIELDS.QTY] = qty;
+
         const createResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TABLE_NAME}`, {
             method: 'POST',
             headers: {
                 Authorization: `Bearer ${AIRTABLE_TOKEN}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                fields: {
-                    'item name': name,
-                    'item number': itemNumber,
-                    'rack location': rack,
-                    'quantity': qty
-                }
-            })
+            body: JSON.stringify({ fields: fieldsPayload })
         });
 
-        if (!createResponse.ok) throw new Error('Failed to create item in Airtable.');
+        if (!createResponse.ok) {
+            const errorPayload = await createResponse.json();
+            console.error('Airtable Error Payload:', errorPayload);
+            throw new Error(errorPayload.error?.message || `HTTP ${createResponse.status}`);
+        }
+
         const newRecord = await createResponse.json();
         const recordId = newRecord.id;
 
-        // Step B: Upload image attachment if file provided
+        // Step B: Upload Image Attachment if selected
         if (fileInput.files.length > 0) {
             const file = fileInput.files[0];
             const base64Data = await convertFileToBase64(file);
 
-            const uploadResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${recordId}/image/uploadAttachment`, {
+            const uploadResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${recordId}/${FIELDS.IMAGE}/uploadAttachment`, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${AIRTABLE_TOKEN}`,
@@ -203,34 +228,27 @@ async function saveNewItem(event) {
             });
 
             if (!uploadResponse.ok) {
-                await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${recordId}/Image/uploadAttachment`, {
-                    method: 'POST',
-                    headers: {
-                        Authorization: `Bearer ${AIRTABLE_TOKEN}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        contentType: file.type,
-                        file: base64Data,
-                        filename: file.name
-                    })
-                });
+                const imgErr = await uploadResponse.json();
+                console.warn('Image upload error:', imgErr);
+                alert(`Item created, but image failed to upload: ${imgErr.error?.message || 'Check column name'}`);
             }
         }
 
         alert('New inventory item created successfully!');
         closeAddModal();
-        fetchAirtableData(); // Reload inventory & update stats
+        fetchAirtableData();
     } catch (error) {
         console.error('Error creating item:', error);
-        alert('Failed to create new item. Check console for details.');
+        alert(`Failed to create new item:\n${error.message}`);
     } finally {
         saveBtn.innerText = 'Create Item';
         saveBtn.disabled = false;
     }
 }
 
-// 5. Edit Item Modal Handlers
+// ==========================================
+// 4. EDIT ITEM MODAL
+// ==========================================
 function openEditModal(recordId) {
     const item = inventoryData.find(i => i.id === recordId);
     if (!item) return;
@@ -259,33 +277,38 @@ async function saveItemEdits(event) {
     const newName = document.getElementById('editName').value;
     const newItemNumber = document.getElementById('editSku').value;
     const newRack = document.getElementById('editRack').value;
-    const newQty = parseInt(document.getElementById('editQty').value, 10);
+    const newQty = parseInt(document.getElementById('editQty').value, 10) || 0;
     const fileInput = document.getElementById('editImageFile');
 
     try {
+        // Step A: Patch Fields
+        const fieldsPayload = {};
+        fieldsPayload[FIELDS.NAME] = newName;
+        fieldsPayload[FIELDS.SKU] = newItemNumber;
+        fieldsPayload[FIELDS.RACK] = newRack;
+        fieldsPayload[FIELDS.QTY] = newQty;
+
         const patchResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TABLE_NAME}/${recordId}`, {
             method: 'PATCH',
             headers: {
                 Authorization: `Bearer ${AIRTABLE_TOKEN}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                fields: {
-                    'item name': newName,
-                    'item number': newItemNumber,
-                    'rack location': newRack,
-                    'quantity': newQty
-                }
-            })
+            body: JSON.stringify({ fields: fieldsPayload })
         });
 
-        if (!patchResponse.ok) throw new Error('Failed to update fields.');
+        if (!patchResponse.ok) {
+            const errorPayload = await patchResponse.json();
+            console.error('Airtable Error Payload:', errorPayload);
+            throw new Error(errorPayload.error?.message || `HTTP ${patchResponse.status}`);
+        }
 
+        // Step B: Upload Image Attachment if selected
         if (fileInput.files.length > 0) {
             const file = fileInput.files[0];
             const base64Data = await convertFileToBase64(file);
 
-            const uploadResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${recordId}/image/uploadAttachment`, {
+            const uploadResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${recordId}/${FIELDS.IMAGE}/uploadAttachment`, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${AIRTABLE_TOKEN}`,
@@ -299,18 +322,9 @@ async function saveItemEdits(event) {
             });
 
             if (!uploadResponse.ok) {
-                await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${recordId}/Image/uploadAttachment`, {
-                    method: 'POST',
-                    headers: {
-                        Authorization: `Bearer ${AIRTABLE_TOKEN}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        contentType: file.type,
-                        file: base64Data,
-                        filename: file.name
-                    })
-                });
+                const imgErr = await uploadResponse.json();
+                console.warn('Image upload error:', imgErr);
+                alert(`Text updated, but image failed to upload: ${imgErr.error?.message || 'Check column name'}`);
             }
         }
 
@@ -319,14 +333,14 @@ async function saveItemEdits(event) {
         fetchAirtableData();
     } catch (error) {
         console.error('Error updating item:', error);
-        alert('Failed to update item details. Check console for details.');
+        alert(`Failed to update item:\n${error.message}`);
     } finally {
         saveBtn.innerText = 'Save Changes';
         saveBtn.disabled = false;
     }
 }
 
-// Utility: Convert uploaded file to Base64
+// Base64 File Reader Helper
 function convertFileToBase64(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -340,7 +354,9 @@ function convertFileToBase64(file) {
     });
 }
 
-// 6. Filtering logic
+// ==========================================
+// 5. SEARCH & FILTER
+// ==========================================
 function filterInventory(searchTerm) {
     const term = searchTerm.toLowerCase();
     const filteredData = inventoryData.filter(item => {
@@ -356,10 +372,12 @@ searchInput.addEventListener('input', function(event) {
     filterInventory(event.target.value);
 });
 
-// Load data on start
+// Initial Fetch
 fetchAirtableData();
 
-// 7. QR Code Scanner Logic
+// ==========================================
+// 6. QR SCANNER LOGIC
+// ==========================================
 let html5QrCode = null;
 let isScanning = false;
 
@@ -401,7 +419,7 @@ function toggleScanner() {
                 filterInventory(query);
                 toggleScanner();
             },
-            (errorMessage) => {}
+            () => {}
         ).catch(err => {
             console.error("Unable to start camera:", err);
             alert("Could not access camera. Please check permissions.");
