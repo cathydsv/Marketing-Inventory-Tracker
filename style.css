@@ -2,6 +2,8 @@
 :root {
     --dsv-blue: #002664;
     --dsv-dark-blue: #001942;
+    --dsv-green: #00682A;      /* Custom Green Color */
+    --dsv-green-dark: #004f20; /* Darker Green Hover */
     --dsv-teal: #20c997;
     --dsv-teal-dark: #1baa80;
     --dsv-light-grey: #f4f6f8;
@@ -78,14 +80,14 @@ body {
 }
 
 /* Main Layout */
-.main-container {
+.main-container, .container {
     max-width: 1200px;
     margin: 30px auto;
     padding: 0 20px;
 }
 
 /* KPI Dashboard Grid */
-.kpi-grid {
+.kpi-grid, .kpi-wrapper {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 16px;
@@ -103,7 +105,7 @@ body {
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
-.kpi-label {
+.kpi-label, .kpi-title {
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -119,7 +121,7 @@ body {
 }
 
 /* Control & Search Bar */
-.control-panel {
+.control-panel, .toolbar {
     display: flex;
     gap: 12px;
     margin-bottom: 24px;
@@ -129,7 +131,7 @@ body {
     flex: 1;
 }
 
-#searchInput {
+#searchInput, .search-input {
     width: 100%;
     padding: 12px 16px;
     border: 1px solid var(--dsv-border);
@@ -140,13 +142,14 @@ body {
     transition: border 0.15s ease;
 }
 
-#searchInput:focus {
+#searchInput:focus, .search-input:focus {
     outline: none;
     border-color: var(--dsv-blue);
 }
 
-.btn-dsv-primary {
-    background-color: var(--dsv-teal);
+/* Add Item Button Styles (#00682A) */
+#addBtn, .btn-add, .btn-dsv-primary {
+    background-color: var(--dsv-green);
     color: #ffffff;
     border: none;
     padding: 12px 20px;
@@ -161,11 +164,32 @@ body {
     gap: 6px;
 }
 
-.btn-dsv-primary:hover {
-    background-color: var(--dsv-teal-dark);
+#addBtn:hover, .btn-add:hover, .btn-dsv-primary:hover {
+    background-color: var(--dsv-green-dark);
 }
 
-/* Added: White Plus Symbol Styling */
+/* Modal Create Button Style (#00682A) */
+#saveAddBtn {
+    background-color: var(--dsv-green);
+    color: #ffffff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+#saveAddBtn:hover {
+    background-color: var(--dsv-green-dark);
+}
+
+#saveAddBtn:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+}
+
+/* White Plus Symbol Styling */
 .plus-symbol {
     color: #ffffff;
     font-size: 18px;
@@ -173,7 +197,8 @@ body {
     line-height: 1;
 }
 
-.btn-dsv-secondary {
+/* Secondary Actions / Scan Button */
+#scanBtn, .btn-dsv-secondary {
     background-color: var(--dsv-blue);
     color: #ffffff;
     border: none;
@@ -189,7 +214,7 @@ body {
     gap: 6px;
 }
 
-.btn-dsv-secondary:hover {
+#scanBtn:hover, .btn-dsv-secondary:hover {
     background-color: var(--dsv-dark-blue);
 }
 
@@ -204,7 +229,6 @@ body {
     overflow: hidden;
 }
 
-/* Added: Ensures camera video scales cleanly inside box */
 #qr-reader video {
     width: 100% !important;
     height: auto !important;
@@ -212,7 +236,7 @@ body {
 }
 
 /* Card Grid Layout */
-#inventoryList {
+#inventoryList, .inventory-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 20px;
@@ -281,7 +305,7 @@ body {
     line-height: 1.6;
 }
 
-/* Modal Overlay & Dialog (Supports both .modal and .modal-overlay) */
+/* Modal Overlay & Dialog */
 .modal, .modal-overlay {
     display: none;
     position: fixed;
@@ -320,7 +344,7 @@ body {
     color: var(--dsv-blue);
 }
 
-.close-btn {
+.close-btn, .modal-close {
     background: none;
     border: none;
     font-size: 24px;
@@ -349,14 +373,14 @@ body {
     font-size: 14px;
 }
 
-.modal-actions {
+.modal-actions, .modal-footer {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
     margin-top: 20px;
 }
 
-.btn-dsv-cancel {
+.btn-dsv-cancel, .btn-cancel {
     background: #e2e8f0;
     border: 1px solid #cbd5e1;
     padding: 10px 16px;
@@ -364,6 +388,20 @@ body {
     cursor: pointer;
     font-weight: 600;
     color: var(--dsv-text-main);
+}
+
+#saveEditBtn {
+    background-color: var(--dsv-blue);
+    color: #ffffff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+#saveEditBtn:hover {
+    background-color: var(--dsv-dark-blue);
 }
 
 /* Mobile Responsiveness */
@@ -400,23 +438,24 @@ body {
         padding: 4px 10px;
     }
 
-    .main-container {
+    .main-container, .container {
         margin: 16px auto;
         padding: 0 12px;
     }
 
-    .control-panel {
+    .control-panel, .toolbar {
         flex-direction: column;
     }
 
     .btn-dsv-primary,
-    .btn-dsv-secondary {
+    .btn-dsv-secondary,
+    #addBtn, #scanBtn {
         width: 100%;
         justify-content: center;
         text-align: center;
     }
 
-    #inventoryList {
+    #inventoryList, .inventory-grid {
         grid-template-columns: 1fr;
     }
 }
