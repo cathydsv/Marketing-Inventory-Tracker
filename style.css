@@ -1,417 +1,380 @@
-// CONFIGURATION: Airtable Credentials & Base Details
-const AIRTABLE_BASE_ID = 'appDHZSvIlr63Z4f5';
-const AIRTABLE_TOKEN = 'patazE87jjAASpoYd.a184876d404f4df8f8d828c01e5be459db04e43cd3faec3a4bee00ced80c7d77';
-const TABLE_NAME = 'Inventory';
-
-let inventoryData = [];
-const searchInput = document.getElementById('searchInput');
-
-// 1. Fetch data directly from Airtable API
-function fetchAirtableData() {
-    fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TABLE_NAME}`, {
-        headers: {
-            Authorization: `Bearer ${AIRTABLE_TOKEN}`
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (!data.records) {
-            console.error("Airtable response missing records:", data);
-            return;
-        }
-
-        inventoryData = data.records.map(record => {
-            // Checks for 'image' field (lowercase) as well as capital variations
-            const imageAttachments = record.fields['image'] || record.fields['Image'];
-            const imageUrl = (imageAttachments && imageAttachments.length > 0) 
-                ? imageAttachments[0].url 
-                : 'https://placehold.co/300x180/eef2f5/002664?text=No+Image';
-
-            return {
-                id: record.id,
-                itemNumber: record.fields['Item Number'] || record.fields['item number'] || record.fields['sku'] || 'N/A',
-                name: record.fields['Item Name'] || record.fields['item name'] || 'Unnamed Item',
-                qty: parseInt(record.fields['Quantity'] || record.fields['quantity'], 10) || 0,
-                rack: record.fields['Rack Location'] || record.fields['rack location'] || 'Unassigned',
-                image: imageUrl
-            };
-        });
-
-        // Update Dashboard Stats Bar
-        updateKPIs(inventoryData);
-
-        // Handle URL search parameter (?rack=A1-01)
-        const urlParams = new URLSearchParams(window.location.search);
-        const rackParam = urlParams.get('rack');
-
-        if (rackParam) {
-            searchInput.value = rackParam;
-            filterInventory(rackParam);
-        } else {
-            displayInventory(inventoryData);
-        }
-    })
-    .catch(error => console.error("Error fetching Airtable data:", error));
+/* ==========================================
+   1. RESET & BASE STYLES
+   ========================================== */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-// Update Top KPI Metrics
-function updateKPIs(data) {
-    const totalSkus = data.length;
-    const totalItems = data.reduce((sum, item) => sum + item.qty, 0);
-
-    if (document.getElementById('totalSkus')) document.getElementById('totalSkus').innerText = totalSkus;
-    if (document.getElementById('totalItems')) document.getElementById('totalItems').innerText = totalItems.toLocaleString();
+body {
+    background-color: #f4f6f8;
+    color: #1a202c;
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
 }
 
-// 2. Helper function to step quantity in UI
-function adjustQty(recordId, amount) {
-    const qtyInput = document.getElementById(`qty-${recordId}`);
-    if (qtyInput) {
-        let currentQty = parseInt(qtyInput.value, 10) || 0;
-        let newQty = currentQty + amount;
-        if (newQty < 0) newQty = 0;
-        qtyInput.value = newQty;
+/* ==========================================
+   2. HEADER & BRANDING
+   ========================================== */
+header, .header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #002664;
+    color: #ffffff;
+    padding: 16px 24px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.header-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.header-title img {
+    height: 32px;
+    width: auto;
+}
+
+h1, .app-title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}
+
+/* ==========================================
+   3. KPI SUMMARY CARDS
+   ========================================== */
+.kpi-container {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.kpi-card {
+    background: #ffffff;
+    padding: 16px 20px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    flex: 1;
+    min-width: 200px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.kpi-title {
+    font-size: 12px;
+    color: #64748b;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.kpi-value {
+    font-size: 26px;
+    font-weight: 700;
+    color: #002664;
+    margin-top: 4px;
+}
+
+/* Live Sync Badge */
+.sync-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #059669;
+    font-weight: 600;
+    background: #ecfdf5;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid #a7f3d0;
+}
+
+.sync-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #10b981;
+    border-radius: 50%;
+}
+
+/* ==========================================
+   4. CONTROLS BAR (SEARCH & BUTTONS)
+   ========================================== */
+.controls-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+#searchInput {
+    flex: 1;
+    min-width: 260px;
+    padding: 10px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    background-color: #ffffff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+#searchInput:focus {
+    border-color: #002664;
+    box-shadow: 0 0 0 3px rgba(0, 38, 100, 0.12);
+}
+
+/* Primary Green Add Button */
+.btn-dsv-primary {
+    background-color: #00682A;
+    color: #ffffff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-dsv-primary:hover {
+    background-color: #004d1f;
+}
+
+.plus-symbol {
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* Secondary Navy Scan Button */
+.btn-dsv-secondary {
+    background-color: #002664;
+    color: #ffffff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-dsv-secondary:hover {
+    background-color: #001a44;
+}
+
+/* QR Camera Scanner Viewport */
+#qr-reader {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto 20px auto;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid #002664;
+    display: none;
+}
+
+/* ==========================================
+   5. INVENTORY GRID & CARDS
+   ========================================== */
+#inventoryList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.item-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    padding: 16px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.item-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+}
+
+.card-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.item-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.3;
+}
+
+.btn-edit-card {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: background 0.15s ease;
+}
+
+.btn-edit-card:hover {
+    background: #e2e8f0;
+}
+
+.item-image {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 6px;
+    background-color: #f8fafc;
+    margin-bottom: 12px;
+    border: 1px solid #f1f5f9;
+}
+
+.item-details {
+    font-size: 13px;
+    color: #475569;
+    line-height: 1.6;
+}
+
+.item-details strong {
+    color: #0f172a;
+}
+
+/* ==========================================
+   6. MODALS & FORMS
+   ========================================== */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(2px);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 16px;
+}
+
+.modal-content {
+    background: #ffffff;
+    padding: 24px;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-header h2 {
+    font-size: 18px;
+    color: #002664;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #64748b;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 6px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+}
+
+.form-group input:focus {
+    border-color: #002664;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* ==========================================
+   7. RESPONSIVE / MOBILE
+   ========================================== */
+@media (max-width: 640px) {
+    body {
+        padding: 12px;
     }
-}
 
-// 3. Display items as DSV Cards
-function displayInventory(itemsToDisplay) {
-    const listContainer = document.getElementById('inventoryList');
-    listContainer.innerHTML = '';
-
-    if (itemsToDisplay.length === 0) {
-        listContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #5e6d82;">No inventory records match your query.</p>';
-        return;
+    .kpi-container {
+        flex-direction: column;
     }
 
-    itemsToDisplay.forEach(item => {
-        const card = document.createElement('div');
-        card.className = 'item-card';
-
-        card.innerHTML = `
-            <div>
-                <div class="card-header-bar">
-                    <div class="item-name">${item.name}</div>
-                    <button onclick="openEditModal('${item.id}')" class="btn-edit-card">✏️ Edit</button>
-                </div>
-                <img src="${item.image}" alt="${item.name}" class="item-image" onerror="this.onerror=null; this.src='https://placehold.co/300x180/eef2f5/002664?text=No+Image';">
-            </div>
-            
-            <div class="item-details">
-                <strong>Item Number:</strong> ${item.itemNumber} <br>
-                <strong>Rack Location:</strong> ${item.rack} <br><br>
-                
-                <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
-                    <strong style="color: #0d1e3a;">Qty:</strong> 
-                    <button onclick="adjustQty('${item.id}', -1)" style="padding: 4px 10px; background-color: #e2e8f0; border: 1px solid #cbd5e1; border-radius: 3px; cursor: pointer; font-weight: bold;">-</button>
-                    <input type="number" id="qty-${item.id}" value="${item.qty}" min="0" style="width: 50px; padding: 4px; border-radius: 3px; border: 1px solid #ccc; text-align: center;">
-                    <button onclick="adjustQty('${item.id}', 1)" style="padding: 4px 10px; background-color: #e2e8f0; border: 1px solid #cbd5e1; border-radius: 3px; cursor: pointer; font-weight: bold;">+</button>
-                    
-                    <button onclick="updateQuantity('${item.id}')" style="padding: 5px 12px; background-color: #002664; color: white; border: none; border-radius: 3px; cursor: pointer; margin-left: auto; font-weight: 600;">Save</button>
-                </div>
-            </div>
-        `;
-        
-        listContainer.appendChild(card);
-    });
-}
-
-// Quick Quantity Save from Card
-function updateQuantity(recordId) {
-    const newQtyInput = document.getElementById(`qty-${recordId}`);
-    const newQty = parseInt(newQtyInput.value, 10) || 0;
-
-    fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TABLE_NAME}/${recordId}`, {
-        method: 'PATCH',
-        headers: {
-            Authorization: `Bearer ${AIRTABLE_TOKEN}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            fields: {
-                'quantity': newQty,
-                'Quantity': newQty
-            }
-        })
-    })
-    .then(async response => {
-        if (!response.ok) {
-            const errData = await response.json();
-            throw new Error(errData.error?.message || 'Failed to update quantity');
-        }
-        return response.json();
-    })
-    .then(() => {
-        const item = inventoryData.find(i => i.id === recordId);
-        if (item) item.qty = newQty;
-        updateKPIs(inventoryData);
-        alert("Stock level saved successfully.");
-    })
-    .catch(error => {
-        console.error("Error updating quantity:", error);
-        alert(`Failed to update quantity: ${error.message}`);
-    });
-}
-
-// 4. Create New Item Handlers
-function openAddModal() {
-    document.getElementById('addForm').reset();
-    document.getElementById('addModal').style.display = 'flex';
-}
-
-function closeAddModal() {
-    document.getElementById('addModal').style.display = 'none';
-}
-
-async function saveNewItem(event) {
-    event.preventDefault();
-    const saveBtn = document.getElementById('saveAddBtn');
-    saveBtn.innerText = 'Creating...';
-    saveBtn.disabled = true;
-
-    const name = document.getElementById('addName').value;
-    const itemNumber = document.getElementById('addSku').value;
-    const rack = document.getElementById('addRack').value;
-    const qty = parseInt(document.getElementById('addQty').value, 10) || 0;
-    const fileInput = document.getElementById('addImageFile');
-
-    try {
-        // Step A: Create the new record in Airtable
-        const createResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TABLE_NAME}`, {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${AIRTABLE_TOKEN}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                fields: {
-                    'item name': name,
-                    'item number': itemNumber,
-                    'rack location': rack,
-                    'quantity': qty
-                }
-            })
-        });
-
-        if (!createResponse.ok) {
-            const errorPayload = await createResponse.json();
-            console.error('Airtable Error Payload:', errorPayload);
-            throw new Error(errorPayload.error?.message || 'Failed to create item in Airtable.');
-        }
-
-        const newRecord = await createResponse.json();
-        const recordId = newRecord.id;
-
-        // Step B: Direct image attachment upload to the 'image' field
-        if (fileInput.files.length > 0) {
-            const file = fileInput.files[0];
-            const base64Data = await convertFileToBase64(file);
-
-            const uploadResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${recordId}/image/uploadAttachment`, {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${AIRTABLE_TOKEN}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    contentType: file.type,
-                    file: base64Data,
-                    filename: file.name
-                })
-            });
-
-            if (!uploadResponse.ok) {
-                const imgErr = await uploadResponse.json();
-                console.warn('Image upload error:', imgErr);
-                alert(`Record created, but image failed to upload: ${imgErr.error?.message || 'Unknown error'}`);
-            }
-        }
-
-        alert('New inventory item created successfully!');
-        closeAddModal();
-        fetchAirtableData();
-    } catch (error) {
-        console.error('Error creating item:', error);
-        alert(`Failed to create new item: ${error.message}`);
-    } finally {
-        saveBtn.innerText = 'Create Item';
-        saveBtn.disabled = false;
+    .controls-bar {
+        flex-direction: column;
+        align-items: stretch;
     }
-}
 
-// 5. Edit Item Modal Handlers
-function openEditModal(recordId) {
-    const item = inventoryData.find(i => i.id === recordId);
-    if (!item) return;
-
-    document.getElementById('editRecordId').value = item.id;
-    document.getElementById('editName').value = item.name;
-    document.getElementById('editSku').value = item.itemNumber;
-    document.getElementById('editRack').value = item.rack;
-    document.getElementById('editQty').value = item.qty;
-    document.getElementById('editImageFile').value = '';
-
-    document.getElementById('editModal').style.display = 'flex';
-}
-
-function closeEditModal() {
-    document.getElementById('editModal').style.display = 'none';
-}
-
-async function saveItemEdits(event) {
-    event.preventDefault();
-    const saveBtn = document.getElementById('saveEditBtn');
-    saveBtn.innerText = 'Saving...';
-    saveBtn.disabled = true;
-
-    const recordId = document.getElementById('editRecordId').value;
-    const newName = document.getElementById('editName').value;
-    const newItemNumber = document.getElementById('editSku').value;
-    const newRack = document.getElementById('editRack').value;
-    const newQty = parseInt(document.getElementById('editQty').value, 10) || 0;
-    const fileInput = document.getElementById('editImageFile');
-
-    try {
-        // Step A: Patch item details
-        const patchResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TABLE_NAME}/${recordId}`, {
-            method: 'PATCH',
-            headers: {
-                Authorization: `Bearer ${AIRTABLE_TOKEN}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                fields: {
-                    'item name': newName,
-                    'item number': newItemNumber,
-                    'rack location': newRack,
-                    'quantity': newQty
-                }
-            })
-        });
-
-        if (!patchResponse.ok) {
-            const errorPayload = await patchResponse.json();
-            console.error('Airtable Error Payload:', errorPayload);
-            throw new Error(errorPayload.error?.message || 'Failed to update item fields.');
-        }
-
-        // Step B: Upload image attachment if file selected
-        if (fileInput.files.length > 0) {
-            const file = fileInput.files[0];
-            const base64Data = await convertFileToBase64(file);
-
-            const uploadResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${recordId}/image/uploadAttachment`, {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${AIRTABLE_TOKEN}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    contentType: file.type,
-                    file: base64Data,
-                    filename: file.name
-                })
-            });
-
-            if (!uploadResponse.ok) {
-                const imgErr = await uploadResponse.json();
-                console.warn('Image upload error:', imgErr);
-                alert(`Text fields saved, but image upload failed: ${imgErr.error?.message || 'Unknown error'}`);
-            }
-        }
-
-        alert('Item updated successfully!');
-        closeEditModal();
-        fetchAirtableData();
-    } catch (error) {
-        console.error('Error updating item:', error);
-        alert(`Failed to update item details: ${error.message}`);
-    } finally {
-        saveBtn.innerText = 'Save Changes';
-        saveBtn.disabled = false;
+    #searchInput {
+        min-width: 100%;
     }
-}
 
-// Utility: Convert uploaded file to Base64
-function convertFileToBase64(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-            const result = reader.result;
-            const base64 = result.split(',')[1];
-            resolve(base64);
-        };
-        reader.onerror = error => reject(error);
-        reader.readAsDataURL(file);
-    });
-}
-
-// 6. Filtering & Search Logic
-function filterInventory(searchTerm) {
-    const term = searchTerm.toLowerCase();
-    const filteredData = inventoryData.filter(item => {
-        return item.name.toLowerCase().includes(term) ||
-               item.itemNumber.toLowerCase().includes(term) ||
-               item.rack.toLowerCase().includes(term);
-    });
-    
-    displayInventory(filteredData);
-}
-
-searchInput.addEventListener('input', function(event) {
-    filterInventory(event.target.value);
-});
-
-// Initial Data Load
-fetchAirtableData();
-
-// 7. QR Code Camera Scanner Logic
-let html5QrCode = null;
-let isScanning = false;
-
-function toggleScanner() {
-    const readerElement = document.getElementById('qr-reader');
-    const scanBtn = document.getElementById('scanBtn');
-
-    if (isScanning) {
-        html5QrCode.stop().then(() => {
-            readerElement.style.display = 'none';
-            scanBtn.innerText = '📷 Scan QR Code';
-            scanBtn.style.backgroundColor = '#002664';
-            isScanning = false;
-        }).catch(err => console.error("Error stopping scanner:", err));
-    } else {
-        readerElement.style.display = 'block';
-        scanBtn.innerText = '❌ Close Camera';
-        scanBtn.style.backgroundColor = '#d9534f';
-        isScanning = true;
-
-        html5QrCode = new Html5Qrcode("qr-reader");
-        const config = { fps: 10, qrbox: { width: 220, height: 220 } };
-
-        html5QrCode.start(
-            { facingMode: "environment" },
-            config,
-            (decodedText) => {
-                let query = decodedText;
-                if (decodedText.includes('rack=')) {
-                    try {
-                        const url = new URL(decodedText);
-                        query = url.searchParams.get('rack') || decodedText;
-                    } catch (e) {
-                        query = decodedText;
-                    }
-                }
-
-                document.getElementById('searchInput').value = query;
-                filterInventory(query);
-                toggleScanner();
-            },
-            (errorMessage) => {}
-        ).catch(err => {
-            console.error("Unable to start camera:", err);
-            alert("Could not access camera. Please check permissions.");
-            toggleScanner();
-        });
+    .btn-dsv-primary, .btn-dsv-secondary {
+        justify-content: center;
+        width: 100%;
     }
 }
