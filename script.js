@@ -23,10 +23,10 @@ function fetchAirtableData() {
 
             return {
                 id: record.id,
-                sku: record.fields['sku'] || 'N/A',
-                name: record.fields['item name'] || 'Unnamed Item',
+                itemNumber: record.fields['item number'] || record.fields['Item Number'] || record.fields['sku'] || 'N/A',
+                name: record.fields['item name'] || record.fields['Item Name'] || 'Unnamed Item',
                 qty: parseInt(record.fields['quantity'], 10) || 0,
-                rack: record.fields['rack location'] || 'Unassigned',
+                rack: record.fields['rack location'] || record.fields['Rack Location'] || 'Unassigned',
                 image: imageUrl
             };
         });
@@ -92,7 +92,7 @@ function displayInventory(itemsToDisplay) {
             </div>
             
             <div class="item-details">
-                <strong>SKU:</strong> ${item.sku} <br>
+                <strong>Item Number:</strong> ${item.itemNumber} <br>
                 <strong>Rack Location:</strong> ${item.rack} <br><br>
                 
                 <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
@@ -140,14 +140,104 @@ function updateQuantity(recordId) {
     });
 }
 
-// 4. Modal Edit Handlers
+// 4. Create New Item Handlers
+function openAddModal() {
+    document.getElementById('addForm').reset();
+    document.getElementById('addModal').style.display = 'flex';
+}
+
+function closeAddModal() {
+    document.getElementById('addModal').style.display = 'none';
+}
+
+async function saveNewItem(event) {
+    event.preventDefault();
+    const saveBtn = document.getElementById('saveAddBtn');
+    saveBtn.innerText = 'Creating...';
+    saveBtn.disabled = true;
+
+    const name = document.getElementById('addName').value;
+    const itemNumber = document.getElementById('addSku').value;
+    const rack = document.getElementById('addRack').value;
+    const qty = parseInt(document.getElementById('addQty').value, 10);
+    const fileInput = document.getElementById('addImageFile');
+
+    try {
+        // Step A: Create the new record in Airtable
+        const createResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TABLE_NAME}`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                fields: {
+                    'item name': name,
+                    'item number': itemNumber,
+                    'rack location': rack,
+                    'quantity': qty
+                }
+            })
+        });
+
+        if (!createResponse.ok) throw new Error('Failed to create item in Airtable.');
+        const newRecord = await createResponse.json();
+        const recordId = newRecord.id;
+
+        // Step B: Upload image attachment if file provided
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const base64Data = await convertFileToBase64(file);
+
+            const uploadResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${recordId}/image/uploadAttachment`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    contentType: file.type,
+                    file: base64Data,
+                    filename: file.name
+                })
+            });
+
+            if (!uploadResponse.ok) {
+                await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${recordId}/Image/uploadAttachment`, {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        contentType: file.type,
+                        file: base64Data,
+                        filename: file.name
+                    })
+                });
+            }
+        }
+
+        alert('New inventory item created successfully!');
+        closeAddModal();
+        fetchAirtableData(); // Reload inventory & update stats
+    } catch (error) {
+        console.error('Error creating item:', error);
+        alert('Failed to create new item. Check console for details.');
+    } finally {
+        saveBtn.innerText = 'Create Item';
+        saveBtn.disabled = false;
+    }
+}
+
+// 5. Edit Item Modal Handlers
 function openEditModal(recordId) {
     const item = inventoryData.find(i => i.id === recordId);
     if (!item) return;
 
     document.getElementById('editRecordId').value = item.id;
     document.getElementById('editName').value = item.name;
-    document.getElementById('editSku').value = item.sku;
+    document.getElementById('editSku').value = item.itemNumber;
     document.getElementById('editRack').value = item.rack;
     document.getElementById('editQty').value = item.qty;
     document.getElementById('editImageFile').value = '';
@@ -166,13 +256,13 @@ async function saveItemEdits(event) {
     saveBtn.disabled = true;
 
     const recordId = document.getElementById('editRecordId').value;
-    const newSku = document.getElementById('editSku').value;
+    const newName = document.getElementById('editName').value;
+    const newItemNumber = document.getElementById('editSku').value;
     const newRack = document.getElementById('editRack').value;
     const newQty = parseInt(document.getElementById('editQty').value, 10);
     const fileInput = document.getElementById('editImageFile');
 
     try {
-        // Step A: Patch text fields in Airtable
         const patchResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TABLE_NAME}/${recordId}`, {
             method: 'PATCH',
             headers: {
@@ -181,21 +271,20 @@ async function saveItemEdits(event) {
             },
             body: JSON.stringify({
                 fields: {
-                    'sku': newSku,
+                    'item name': newName,
+                    'item number': newItemNumber,
                     'rack location': newRack,
                     'quantity': newQty
                 }
             })
         });
 
-        if (!patchResponse.ok) throw new Error('Failed to update text fields.');
+        if (!patchResponse.ok) throw new Error('Failed to update fields.');
 
-        // Step B: Upload Image if selected
         if (fileInput.files.length > 0) {
             const file = fileInput.files[0];
             const base64Data = await convertFileToBase64(file);
 
-            // Send file to Airtable Attachment upload API endpoint
             const uploadResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${recordId}/image/uploadAttachment`, {
                 method: 'POST',
                 headers: {
@@ -210,7 +299,6 @@ async function saveItemEdits(event) {
             });
 
             if (!uploadResponse.ok) {
-                // Fallback check if Airtable field uses capital 'Image'
                 await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${recordId}/Image/uploadAttachment`, {
                     method: 'POST',
                     headers: {
@@ -228,7 +316,7 @@ async function saveItemEdits(event) {
 
         alert('Item updated successfully!');
         closeEditModal();
-        fetchAirtableData(); // Reload inventory
+        fetchAirtableData();
     } catch (error) {
         console.error('Error updating item:', error);
         alert('Failed to update item details. Check console for details.');
@@ -238,7 +326,7 @@ async function saveItemEdits(event) {
     }
 }
 
-// Convert uploaded file to Base64
+// Utility: Convert uploaded file to Base64
 function convertFileToBase64(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -252,12 +340,12 @@ function convertFileToBase64(file) {
     });
 }
 
-// 5. Filtering logic
+// 6. Filtering logic
 function filterInventory(searchTerm) {
     const term = searchTerm.toLowerCase();
     const filteredData = inventoryData.filter(item => {
         return item.name.toLowerCase().includes(term) ||
-               item.sku.toLowerCase().includes(term) ||
+               item.itemNumber.toLowerCase().includes(term) ||
                item.rack.toLowerCase().includes(term);
     });
     
@@ -271,7 +359,7 @@ searchInput.addEventListener('input', function(event) {
 // Load data on start
 fetchAirtableData();
 
-// 6. QR Code Scanner Logic
+// 7. QR Code Scanner Logic
 let html5QrCode = null;
 let isScanning = false;
 
