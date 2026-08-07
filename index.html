@@ -43,6 +43,9 @@
             <div class="search-box-wrapper">
                 <input type="text" id="searchInput" placeholder="Search product name, SKU, or rack location...">
             </div>
+            <button class="btn-dsv-primary" onclick="openAddModal()">
+                ➕ Add New Item
+            </button>
             <button id="scanBtn" class="btn-dsv-secondary" onclick="toggleScanner()">
                 📷 Scan QR Code
             </button>
@@ -54,6 +57,43 @@
         <!-- Inventory List Card Grid -->
         <div id="inventoryList"></div>
     </main>
+
+    <!-- Add Item Modal -->
+    <div id="addModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Inventory Item</h3>
+                <button class="close-btn" onclick="closeAddModal()">&times;</button>
+            </div>
+            <form id="addForm" onsubmit="saveNewItem(event)">
+                <div class="form-group">
+                    <label for="addName">Item Name</label>
+                    <input type="text" id="addName" placeholder="e.g. Branded Lanyard" required>
+                </div>
+                <div class="form-group">
+                    <label for="addSku">SKU</label>
+                    <input type="text" id="addSku" placeholder="e.g. MKT-LAN-001" required>
+                </div>
+                <div class="form-group">
+                    <label for="addRack">Rack Location</label>
+                    <input type="text" id="addRack" placeholder="e.g. A1-02" required>
+                </div>
+                <div class="form-group">
+                    <label for="addQty">Quantity</label>
+                    <input type="number" id="addQty" value="0" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="addImageFile">Product Image (Optional)</label>
+                    <input type="file" id="addImageFile" accept="image/*">
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-dsv-cancel" onclick="closeAddModal()">Cancel</button>
+                    <button type="submit" id="saveAddBtn" class="btn-dsv-primary">Create Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Edit Item Modal -->
     <div id="editModal" class="modal-overlay">
