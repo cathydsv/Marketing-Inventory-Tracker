@@ -29,7 +29,7 @@
         <!-- KPI Analytics Summary Bar -->
         <div class="kpi-grid">
             <div class="kpi-card">
-                <div class="kpi-label">Total SKUs</div>
+                <div class="kpi-label">Total Items</div>
                 <div class="kpi-value" id="totalSkus">0</div>
             </div>
             <div class="kpi-card">
@@ -41,7 +41,7 @@
         <!-- Action & Search Bar -->
         <div class="control-panel">
             <div class="search-box-wrapper">
-                <input type="text" id="searchInput" placeholder="Search product name, SKU, or rack location...">
+                <input type="text" id="searchInput" placeholder="Search product name, item number, or rack location...">
             </div>
             <button class="btn-dsv-primary" onclick="openAddModal()">
                 ➕ Add New Item
@@ -71,7 +71,7 @@
                     <input type="text" id="addName" placeholder="e.g. Branded Lanyard" required>
                 </div>
                 <div class="form-group">
-                    <label for="addSku">SKU</label>
+                    <label for="addSku">Item Number</label>
                     <input type="text" id="addSku" placeholder="e.g. MKT-LAN-001" required>
                 </div>
                 <div class="form-group">
@@ -107,10 +107,10 @@
                 
                 <div class="form-group">
                     <label for="editName">Item Name</label>
-                    <input type="text" id="editName" readonly class="readonly-input">
+                    <input type="text" id="editName" required>
                 </div>
                 <div class="form-group">
-                    <label for="editSku">SKU</label>
+                    <label for="editSku">Item Number</label>
                     <input type="text" id="editSku" required>
                 </div>
                 <div class="form-group">
