@@ -112,3 +112,61 @@ searchInput.addEventListener('input', function(event) {
 
 // Load data on start
 fetchAirtableData();
+
+let html5QrCode = null;
+let isScanning = false;
+
+function toggleScanner() {
+    const readerElement = document.getElementById('qr-reader');
+    const scanBtn = document.getElementById('scanBtn');
+
+    if (isScanning) {
+        // Stop scanning
+        html5QrCode.stop().then(() => {
+            readerElement.style.display = 'none';
+            scanBtn.innerText = '📷 Scan QR Code';
+            scanBtn.style.backgroundColor = '#007bff';
+            isScanning = false;
+        }).catch(err => console.error("Error stopping scanner:", err));
+    } else {
+        // Start scanning
+        readerElement.style.display = 'block';
+        scanBtn.innerText = '❌ Close Camera';
+        scanBtn.style.backgroundColor = '#dc3545';
+        isScanning = true;
+
+        html5QrCode = new Html5Qrcode("qr-reader");
+        
+        const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+
+        html5QrCode.start(
+            { facingMode: "environment" }, // Prefers back camera on mobile devices
+            config,
+            (decodedText) => {
+                // When QR code is scanned:
+                console.log("Scanned QR Code:", decodedText);
+
+                // If QR code contains full URL (e.g., https://site.com/?rack=A1-01), extract parameter
+                let query = decodedText;
+                if (decodedText.includes('rack=')) {
+                    const url = new URL(decodedText);
+                    query = url.searchParams.get('rack') || decodedText;
+                }
+
+                // Auto-fill search box and filter list
+                document.getElementById('searchInput').value = query;
+                filterInventory(query);
+
+                // Stop camera after successful scan
+                toggleScanner();
+            },
+            (errorMessage) => {
+                // Scanning errors occur continuously when no QR code is in frame; keep silent
+            }
+        ).catch(err => {
+            console.error("Unable to start camera:", err);
+            alert("Could not access camera. Please allow camera permissions in your browser.");
+            toggleScanner();
+        });
+    }
+}
