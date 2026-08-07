@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DSV | Storeroom Inventory</title>
+    <title>DSV | Marketing Inventory Tracker</title>
     <link rel="stylesheet" href="style.css">
     
     <!-- HTML5 QR Code Library -->
@@ -15,9 +15,9 @@
     <header class="dsv-navbar">
         <div class="dsv-navbar-container">
             <div class="dsv-brand">
-                <span class="dsv-logo-text">DSV</span>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/e/e0/DSV_Logo.svg" alt="DSV Logo" class="dsv-logo-img">
                 <span class="dsv-divider">|</span>
-                <span class="dsv-subtitle">Global Transport & Logistics — Storeroom Management</span>
+                <span class="dsv-subtitle">Marketing Inventory Tracker</span>
             </div>
             <div class="dsv-status-badge">
                 <span class="status-dot"></span> Live Sync
@@ -26,7 +26,7 @@
     </header>
 
     <main class="main-container">
-        <!-- KPI Analytics Summary Bar -->
+        <!-- KPI Analytics Summary Bar (2-Column Layout) -->
         <div class="kpi-grid">
             <div class="kpi-card">
                 <div class="kpi-label">Total SKUs</div>
@@ -35,10 +35,6 @@
             <div class="kpi-card">
                 <div class="kpi-label">Total Stock Count</div>
                 <div class="kpi-value" id="totalItems">0</div>
-            </div>
-            <div class="kpi-card kpi-alert">
-                <div class="kpi-label">Low Stock Alerts (&lt; 10)</div>
-                <div class="kpi-value" id="lowStockCount">0</div>
             </div>
         </div>
 
