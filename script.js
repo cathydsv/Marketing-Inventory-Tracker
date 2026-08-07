@@ -7,10 +7,10 @@ const TABLE_NAME = 'Inventory';
 
 // Match these EXACTLY to your column headers in Airtable
 const FIELDS = {
-    NAME: 'Item Name',
-    SKU: 'Item Number',
-    RACK: 'Rack Location',
-    QTY: 'Quantity',
+    NAME: 'item name',
+    SKU: 'item number',
+    RACK: 'rack location',
+    QTY: 'quantity',
     IMAGE: 'image'
 };
 
