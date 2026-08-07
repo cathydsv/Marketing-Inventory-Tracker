@@ -5,13 +5,13 @@ const AIRTABLE_BASE_ID = 'appDHZSvIlr63Z4f5';
 const AIRTABLE_TOKEN = 'patazE87jjAASpoYd.a184876d404f4df8f8d828c01e5be459db04e43cd3faec3a4bee00ced80c7d77';
 const TABLE_NAME = 'Inventory';
 
-// IMPORTANT: Match these EXACTLY to your column headers in Airtable (Case-Sensitive!)
+// Match these EXACTLY to your column headers in Airtable
 const FIELDS = {
-    NAME: 'Item Name',        // e.g. 'Item Name' or 'item name' or 'Name'
-    SKU: 'Item Number',       // e.g. 'Item Number' or 'item number' or 'SKU'
-    RACK: 'Rack Location',    // e.g. 'Rack Location' or 'rack location'
-    QTY: 'Quantity',          // e.g. 'Quantity' or 'quantity'
-    IMAGE: 'image'            // e.g. 'image' or 'Image'
+    NAME: 'Item Name',
+    SKU: 'Item Number',
+    RACK: 'Rack Location',
+    QTY: 'Quantity',
+    IMAGE: 'image'
 };
 
 let inventoryData = [];
@@ -34,7 +34,6 @@ function fetchAirtableData() {
         }
 
         inventoryData = data.records.map(record => {
-            // Flexible check for image column
             const imageAttachments = record.fields[FIELDS.IMAGE] || record.fields['Image'] || record.fields['image'];
             const imageUrl = (imageAttachments && imageAttachments.length > 0) 
                 ? imageAttachments[0].url 
@@ -163,12 +162,18 @@ async function updateQuantity(recordId) {
 // 3. CREATE NEW ITEM MODAL
 // ==========================================
 function openAddModal() {
-    document.getElementById('addForm').reset();
-    document.getElementById('addModal').style.display = 'flex';
+    const modal = document.getElementById('addModal');
+    if (modal) {
+        document.getElementById('addForm').reset();
+        modal.style.display = 'flex';
+    }
 }
 
 function closeAddModal() {
-    document.getElementById('addModal').style.display = 'none';
+    const modal = document.getElementById('addModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
 }
 
 async function saveNewItem(event) {
@@ -214,7 +219,7 @@ async function saveNewItem(event) {
             const file = fileInput.files[0];
             const base64Data = await convertFileToBase64(file);
 
-            const uploadResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${recordId}/${FIELDS.IMAGE}/uploadAttachment`, {
+            const uploadResponse = await fetch(`https://content.airtable.com/v0/${AIRTABLE_BASE_ID}/${recordId}/${FIELDS.IMAGE}/uploadAttachment`, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${AIRTABLE_TOKEN}`,
@@ -260,11 +265,13 @@ function openEditModal(recordId) {
     document.getElementById('editQty').value = item.qty;
     document.getElementById('editImageFile').value = '';
 
-    document.getElementById('editModal').style.display = 'flex';
+    const modal = document.getElementById('editModal');
+    if (modal) modal.style.display = 'flex';
 }
 
 function closeEditModal() {
-    document.getElementById('editModal').style.display = 'none';
+    const modal = document.getElementById('editModal');
+    if (modal) modal.style.display = 'none';
 }
 
 async function saveItemEdits(event) {
@@ -308,7 +315,7 @@ async function saveItemEdits(event) {
             const file = fileInput.files[0];
             const base64Data = await convertFileToBase64(file);
 
-            const uploadResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${recordId}/${FIELDS.IMAGE}/uploadAttachment`, {
+            const uploadResponse = await fetch(`https://content.airtable.com/v0/${AIRTABLE_BASE_ID}/${recordId}/${FIELDS.IMAGE}/uploadAttachment`, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${AIRTABLE_TOKEN}`,
@@ -370,6 +377,19 @@ function filterInventory(searchTerm) {
 
 searchInput.addEventListener('input', function(event) {
     filterInventory(event.target.value);
+});
+
+// Close pop-up when clicking outside on the backdrop
+window.addEventListener('click', (event) => {
+    const addModal = document.getElementById('addModal');
+    const editModal = document.getElementById('editModal');
+
+    if (event.target === addModal) {
+        closeAddModal();
+    }
+    if (event.target === editModal) {
+        closeEditModal();
+    }
 });
 
 // Initial Fetch
