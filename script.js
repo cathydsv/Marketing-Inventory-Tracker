@@ -40,7 +40,6 @@ function fetchAirtableData() {
 
             return {
                 id: record.id,
-                itemNumber: record.fields[FIELDS.SKU] || record.fields['Item Number'] || record.fields['item number'] || 'N/A',
                 name: record.fields[FIELDS.NAME] || record.fields['Item Name'] || record.fields['item name'] || 'Unnamed Item',
                 qty: parseInt(record.fields[FIELDS.QTY] || record.fields['Quantity'] || record.fields['quantity'], 10) || 0,
                 rack: record.fields[FIELDS.RACK] || record.fields['Rack Location'] || record.fields['rack location'] || 'Unassigned',
@@ -106,7 +105,6 @@ function displayInventory(itemsToDisplay) {
             </div>
             
             <div class="item-details">
-                <strong>Item Number:</strong> ${item.itemNumber} <br>
                 <strong>Rack Location:</strong> ${item.rack} <br><br>
                 
                 <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
@@ -182,7 +180,6 @@ async function saveNewItem(event) {
     saveBtn.disabled = true;
 
     const name = document.getElementById('addName').value;
-    const itemNumber = document.getElementById('addSku').value;
     const rack = document.getElementById('addRack').value;
     const qty = parseInt(document.getElementById('addQty').value, 10) || 0;
     const fileInput = document.getElementById('addImageFile');
@@ -191,7 +188,6 @@ async function saveNewItem(event) {
         // Step A: Create Record
         const fieldsPayload = {};
         fieldsPayload[FIELDS.NAME] = name;
-        fieldsPayload[FIELDS.SKU] = itemNumber;
         fieldsPayload[FIELDS.RACK] = rack;
         fieldsPayload[FIELDS.QTY] = qty;
 
@@ -259,7 +255,6 @@ function openEditModal(recordId) {
 
     document.getElementById('editRecordId').value = item.id;
     document.getElementById('editName').value = item.name;
-    document.getElementById('editSku').value = item.itemNumber;
     document.getElementById('editRack').value = item.rack;
     document.getElementById('editQty').value = item.qty;
     document.getElementById('editImageFile').value = '';
@@ -281,7 +276,6 @@ async function saveItemEdits(event) {
 
     const recordId = document.getElementById('editRecordId').value;
     const newName = document.getElementById('editName').value;
-    const newItemNumber = document.getElementById('editSku').value;
     const newRack = document.getElementById('editRack').value;
     const newQty = parseInt(document.getElementById('editQty').value, 10) || 0;
     const fileInput = document.getElementById('editImageFile');
@@ -290,7 +284,6 @@ async function saveItemEdits(event) {
         // Step A: Patch Fields
         const fieldsPayload = {};
         fieldsPayload[FIELDS.NAME] = newName;
-        fieldsPayload[FIELDS.SKU] = newItemNumber;
         fieldsPayload[FIELDS.RACK] = newRack;
         fieldsPayload[FIELDS.QTY] = newQty;
 
@@ -367,7 +360,6 @@ function filterInventory(searchTerm) {
     const term = searchTerm.toLowerCase();
     const filteredData = inventoryData.filter(item => {
         return item.name.toLowerCase().includes(term) ||
-               item.itemNumber.toLowerCase().includes(term) ||
                item.rack.toLowerCase().includes(term);
     });
     
