@@ -466,12 +466,15 @@ function toggleScanner() {
     }
 }
 
-function openLogModal(recordId) {
+async function openLogModal(recordId) {
 
     document.getElementById('logForm').reset();
 
     document.getElementById('logRecordId').value =
         recordId;
+
+    await loadBranches();
+    await loadDepartments();
 
     document.getElementById('logModal').style.display =
         'flex';
@@ -584,3 +587,70 @@ async function saveLog(event) {
     }
 }
 
+async function loadBranches() {
+
+    const response = await fetch(
+        `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Branches`,
+        {
+            headers: {
+                Authorization: `Bearer ${AIRTABLE_TOKEN}`
+            }
+        }
+    );
+
+    const data = await response.json();
+
+    const select =
+        document.getElementById('logBranch');
+
+    select.innerHTML =
+        '<option value="">Select Branch</option>';
+
+    data.records.forEach(record => {
+
+        const option =
+            document.createElement('option');
+
+        option.value =
+            record.fields['Branch Name'];
+
+        option.textContent =
+            record.fields['Branch Name'];
+
+        select.appendChild(option);
+    });
+}
+
+async function loadDepartments() {
+
+    const response = await fetch(
+        `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Departments`,
+        {
+            headers: {
+                Authorization: `Bearer ${AIRTABLE_TOKEN}`
+            }
+        }
+    );
+
+    const data = await response.json();
+
+    const select =
+        document.getElementById('logDepartment');
+
+    select.innerHTML =
+        '<option value="">Select Department</option>';
+
+    data.records.forEach(record => {
+
+        const option =
+            document.createElement('option');
+
+        option.value =
+            record.fields['Department Name'];
+
+        option.textContent =
+            record.fields['Department Name'];
+
+        select.appendChild(option);
+    });
+}
