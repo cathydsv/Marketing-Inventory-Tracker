@@ -47,7 +47,7 @@ function fetchAirtableData() {
             const imageUrl = (imageAttachments && imageAttachments.length > 0) 
                 ? imageAttachments[0].url 
                 : 'https://placehold.co/300x180/eef2f5/002664?text=No+Image';
-
+           
             return {
                 id: record.id,
                 name: record.fields[FIELDS.NAME] || record.fields['Item Name'] || record.fields['item name'] || 'Unnamed Item',
@@ -56,8 +56,17 @@ function fetchAirtableData() {
                 image: imageUrl
             };
         });
+        
+        // Sort item names A-Z
+        inventoryData.sort((a, b) =>
+            a.name.toLowerCase().localeCompare(
+                b.name.toLowerCase()
+            )
+        );
 
+        
         updateKPIs(inventoryData);
+
 
         const urlParams = new URLSearchParams(window.location.search);
         const rackParam = urlParams.get('rack');
