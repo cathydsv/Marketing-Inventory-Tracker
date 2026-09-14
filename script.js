@@ -466,19 +466,28 @@ function toggleScanner() {
     }
 }
 
-async function openLogModal(recordId) {
+function openLogModal(recordId) {
+
+    const item =
+        inventoryData.find(i => i.id === recordId);
 
     document.getElementById('logForm').reset();
 
     document.getElementById('logRecordId').value =
         recordId;
 
-    await loadBranches();
-    await loadDepartments();
+    if (item) {
+        document.getElementById('logModalTitle').innerText =
+            item.name;
+    }
+
+    document.getElementById('logType').value =
+        'Outbound';
 
     document.getElementById('logModal').style.display =
         'flex';
 }
+
 
 function closeLogModal() {
 
