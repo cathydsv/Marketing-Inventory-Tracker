@@ -137,7 +137,7 @@
     <div class="modal-content">
 
         <div class="modal-header">
-            <h3>Inventory Movement</h3>
+            <h3 id="logModalTitle">Inventory Movement</h3>
 
             <button class="close-btn"
                     onclick="closeLogModal()">
@@ -155,14 +155,15 @@
                 <label>Type</label>
 
                 <select id="logType" required>
+                    <option value="Outbound" selected>
+                        Outbound
+                    </option>
+                
                     <option value="Inbound">
                         Inbound
                     </option>
-
-                    <option value="Outbound">
-                        Outbound
-                    </option>
                 </select>
+
             </div>
 
             <div class="form-group">
