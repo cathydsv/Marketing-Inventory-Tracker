@@ -396,13 +396,18 @@ searchInput.addEventListener('input', function(event) {
 window.addEventListener('click', (event) => {
     const addModal = document.getElementById('addModal');
     const editModal = document.getElementById('editModal');
-
+    const logModal = document.getElementById('logModal');
+    
     if (event.target === addModal) {
         closeAddModal();
     }
     if (event.target === editModal) {
         closeEditModal();
     }
+    if (event.target === logModal) {
+        closeLogModal();
+    }
+
 });
 
 // Initial Fetch
@@ -460,3 +465,113 @@ function toggleScanner() {
         });
     }
 }
+
+function openLogModal(recordId) {
+
+    document.getElementById('logForm').reset();
+
+    document.getElementById('logRecordId').value =
+        recordId;
+
+    document.getElementById('logModal').style.display =
+        'flex';
+}
+
+function closeLogModal() {
+
+    document.getElementById('logModal').style.display =
+        'none';
+}
+async function saveLog(event) {
+
+    event.preventDefault();
+
+    const recordId =
+        document.getElementById('logRecordId').value;
+
+    const type =
+        document.getElementById('logType').value;
+
+    const qty =
+        parseInt(document.getElementById('logQty').value);
+
+    const branch =
+        document.getElementById('logBranch').value;
+
+    const department =
+        document.getElementById('logDepartment').value;
+
+    const by =
+        document.getElementById('logBy').value;
+
+    const item =
+        inventoryData.find(i => i.id === recordId);
+
+    if (!item) return;
+
+    let newQty = item.qty;
+
+    if (type === 'Inbound') {
+        newQty += qty;
+    } else {
+        newQty -= qty;
+    }
+
+    if (newQty < 0) {
+        alert('Not enough stock available.');
+        return;
+    }
+
+    try {
+
+        await fetch(
+            `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${LOG_TABLE_NAME}`,
+            {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    fields: {
+                        [LOG_FIELDS.ITEM_NAME]: item.name,
+                        [LOG_FIELDS.TYPE]: type,
+                        [LOG_FIELDS.QTY]: qty,
+                        [LOG_FIELDS.BRANCH]: branch,
+                        [LOG_FIELDS.DEPARTMENT]: department,
+                        [LOG_FIELDS.BY]: by
+                    }
+                })
+            }
+        );
+
+        await fetch(
+            `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TABLE_NAME}/${recordId}`,
+            {
+                method: 'PATCH',
+                headers: {
+                    Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    fields: {
+                        [FIELDS.QTY]: newQty
+                    }
+                })
+            }
+        );
+
+        alert('Inventory updated successfully');
+
+        closeLogModal();
+
+        fetchAirtableData();
+
+    } catch(error) {
+
+        console.error(error);
+
+        alert(error.message);
+    }
+}
+
