@@ -404,6 +404,53 @@ body {
     background-color: var(--dsv-dark-blue);
 }
 
+/* ==========================================
+   INVENTORY LOG MODAL
+========================================== */
+
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--dsv-border);
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 14px;
+    font-family: inherit;
+    background: #ffffff;
+}
+
+.form-group textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+#logModal .modal-content {
+    max-width: 500px;
+}
+
+#logModal .modal-header h3 {
+    color: var(--dsv-blue);
+}
+
+.btn-move-card {
+    background-color: #198754;
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    white-space: nowrap;
+}
+
+.btn-move-card:hover {
+    background-color: #146c43;
+}
+
+
 /* Mobile Responsiveness */
 @media (max-width: 640px) {
     .dsv-navbar {
