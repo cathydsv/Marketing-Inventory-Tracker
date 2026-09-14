@@ -515,6 +515,17 @@ async function saveLog(event) {
     const department =
         document.getElementById('logDepartment').value;
 
+    if (!branch) {
+        alert('Please select a Branch.');
+        return;
+    }
+    
+    if (!department) {
+        alert('Please select a Department.');
+        return;
+    }
+
+
     const by =
         document.getElementById('logBy').value;
 
