@@ -412,6 +412,8 @@ window.addEventListener('click', (event) => {
 
 // Initial Fetch
 fetchAirtableData();
+loadBranches();
+loadDepartments();
 
 // ==========================================
 // 6. QR SCANNER LOGIC
