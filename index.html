@@ -133,6 +133,91 @@
         </div>
     </div>
 
+    <div id="logModal" class="modal-overlay">
+    <div class="modal-content">
+
+        <div class="modal-header">
+            <h3>Inventory Movement</h3>
+
+            <button class="close-btn"
+                    onclick="closeLogModal()">
+                &times;
+            </button>
+        </div>
+
+        <form id="logForm"
+              onsubmit="saveLog(event)">
+
+            <input type="hidden"
+                   id="logRecordId">
+
+            <div class="form-group">
+                <label>Type</label>
+
+                <select id="logType" required>
+                    <option value="Inbound">
+                        Inbound
+                    </option>
+
+                    <option value="Outbound">
+                        Outbound
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Quantity</label>
+
+                <input type="number"
+                       id="logQty"
+                       min="1"
+                       required>
+            </div>
+
+            <div class="form-group">
+                <label>Branch</label>
+
+                <input type="text"
+                       id="logBranch"
+                       required>
+            </div>
+
+            <div class="form-group">
+                <label>Department</label>
+
+                <input type="text"
+                       id="logDepartment"
+                       required>
+            </div>
+
+            <div class="form-group">
+                <label>By</label>
+
+                <input type="text"
+                       id="logBy"
+                       required>
+            </div>
+
+            <div class="modal-actions">
+
+                <button type="button"
+                        class="btn-dsv-cancel"
+                        onclick="closeLogModal()">
+                    Cancel
+                </button>
+
+                <button type="submit"
+                        class="btn-dsv-primary">
+                    Submit
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
     <script src="script.js"></script>
 </body>
 </html>
