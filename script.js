@@ -4,6 +4,16 @@
 const AIRTABLE_BASE_ID = 'appDHZSvIlr63Z4f5';
 const AIRTABLE_TOKEN = 'patazE87jjAASpoYd.a184876d404f4df8f8d828c01e5be459db04e43cd3faec3a4bee00ced80c7d77';
 const TABLE_NAME = 'Inventory';
+const LOG_TABLE_NAME = 'Inventory Logs';
+
+const LOG_FIELDS = {
+    ITEM_NAME: 'Item Name',
+    TYPE: 'Type',
+    QTY: 'Quantity',
+    BRANCH: 'Branch',
+    DEPARTMENT: 'Department',
+    BY: 'By'
+};
 
 // Match these EXACTLY to your column headers in Airtable
 const FIELDS = {
@@ -99,7 +109,19 @@ function displayInventory(itemsToDisplay) {
             <div>
                 <div class="card-header-bar">
                     <div class="item-name">${item.name}</div>
-                    <button onclick="openEditModal('${item.id}')" class="btn-edit-card">✏️ Edit</button>
+                    <div style="display:flex;gap:6px;">
+                        <button onclick="openEditModal('${item.id}')" class="btn-edit-card">
+                            ✏️ Edit
+                        </button>
+                    
+                        <button
+                            onclick="openLogModal('${item.id}')"
+                            class="btn-edit-card"
+                            style="background:#198754;color:white;">
+                            📦 Move
+                        </button>
+                    </div>
+
                 </div>
                 <img src="${item.image}" alt="${item.name}" class="item-image" onerror="this.onerror=null; this.src='https://placehold.co/300x180/eef2f5/002664?text=No+Image';">
             </div>
