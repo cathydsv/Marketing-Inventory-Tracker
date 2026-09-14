@@ -526,15 +526,6 @@ async function saveLog(event) {
 
         const logResponse = await fetch(
             `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${LOG_TABLE_NAME}`,
-
-            if (!logResponse.ok) {
-                const err = await logResponse.json();
-                throw new Error(
-                    err.error?.message || 'Failed to create log'
-                );
-            }
-
-
             {
                 method: 'POST',
                 headers: {
@@ -553,6 +544,15 @@ async function saveLog(event) {
                 })
             }
         );
+        
+        if (!logResponse.ok) {
+            const err = await logResponse.json();
+        
+            throw new Error(
+                err.error?.message || 'Failed to create log'
+            );
+        }
+        
 
         await fetch(
             `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TABLE_NAME}/${recordId}`,
